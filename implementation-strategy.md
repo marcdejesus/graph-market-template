@@ -121,11 +121,11 @@ const LOGIN_MUTATION = gql`
 - [x] Implement active state indicators
 
 #### 3.3 Global Components
-- [ ] Loading spinner and skeleton components
-- [ ] Error boundary and error pages
-- [ ] Toast notification system
-- [ ] Modal/dialog components
-- [ ] Responsive image component wrapper
+- [x] Loading spinner and skeleton components
+- [x] Error boundary and error pages
+- [x] Toast notification system
+- [x] Modal/dialog components
+- [x] Responsive image component wrapper
 
 ### Phase 4: Product Catalog System (Week 4-6)
 **Goal:** Complete product browsing and discovery functionality
