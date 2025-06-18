@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
+
+@layer base {
+  :root {
+    --athletic-black: #1a1a1a;
+    --performance-red: #e53e3e;
+    --steel-gray: #718096;
+    --energy-orange: #fd7e14;
+    --success-green: #38a169;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-primary-900;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-steel-500 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-steel-600;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary-900 px-6 py-3 text-sm font-medium text-white shadow-athletic transition-all duration-200 hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-steel-300 bg-white px-6 py-3 text-sm font-medium text-steel-700 shadow-sm transition-all duration-200 hover:bg-steel-50 focus:outline-none focus:ring-2 focus:ring-steel-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-performance {
+    @apply inline-flex items-center justify-center rounded-lg bg-performance-500 px-6 py-3 text-sm font-medium text-white shadow-performance transition-all duration-200 hover:bg-performance-600 focus:outline-none focus:ring-2 focus:ring-performance-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply block w-full rounded-lg border border-steel-300 px-4 py-3 text-primary-900 placeholder-steel-400 shadow-sm transition-all duration-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:bg-steel-50 disabled:text-steel-500;
+  }
+
+  .card {
+    @apply rounded-xl bg-white p-6 shadow-athletic ring-1 ring-steel-200/50;
+  }
+
+  .heading-display {
+    @apply font-display text-4xl font-bold tracking-tight text-primary-900 sm:text-5xl;
+  }
+
+  .heading-section {
+    @apply text-2xl font-bold tracking-tight text-primary-900 sm:text-3xl;
+  }
+
+  .text-body {
+    @apply text-base leading-7 text-steel-600;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+} 
