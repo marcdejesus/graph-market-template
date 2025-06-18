@@ -73,10 +73,10 @@ src/
 - [x] Add loading states and error handling
 
 #### 2.3 Protected Route System
-- [ ] Create route protection middleware
-- [ ] Implement redirect logic for unauthenticated users
-- [ ] Build user profile management
-- [ ] Create logout functionality
+- [x] Create route protection middleware
+- [x] Implement redirect logic for unauthenticated users
+- [x] Build user profile management
+- [x] Create logout functionality
 
 #### 2.4 GraphQL Mutations
 ```typescript
