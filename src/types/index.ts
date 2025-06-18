@@ -211,7 +211,7 @@ export interface BaseComponentProps {
 }
 
 export interface ButtonProps extends BaseComponentProps {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'link'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'performance'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
@@ -219,13 +219,7 @@ export interface ButtonProps extends BaseComponentProps {
   type?: 'button' | 'submit' | 'reset'
 }
 
-export interface InputProps extends BaseComponentProps {
-  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url'
-  placeholder?: string
-  value?: string
-  defaultValue?: string
-  disabled?: boolean
-  required?: boolean
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   error?: string
   onChange?: (_value: string) => void
 }
