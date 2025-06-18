@@ -66,11 +66,11 @@ src/
 - [x] Create authentication context and hooks
 
 #### 2.2 Authentication Pages
-- [ ] Build Login page (`/auth/login`)
-- [ ] Build Registration page (`/auth/register`)
-- [ ] Build Forgot Password page (`/auth/forgot-password`)
-- [ ] Implement form validation with React Hook Form
-- [ ] Add loading states and error handling
+- [x] Build Login page (`/auth/login`)
+- [x] Build Registration page (`/auth/register`)
+- [x] Build Forgot Password page (`/auth/forgot-password`)
+- [x] Implement form validation with React Hook Form
+- [x] Add loading states and error handling
 
 #### 2.3 Protected Route System
 - [ ] Create route protection middleware
