@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/lib/auth'
+import { useUpdateProfile, useLogout } from '@/lib/auth/use-auth-mutations'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { MainLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,9 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>
 
 function ProfileContent() {
-  const { state, logout } = useAuth()
+  const { state } = useAuth()
+  const { updateProfile, loading: _updateLoading } = useUpdateProfile()
+  const { logout } = useLogout()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -49,12 +52,21 @@ function ProfileContent() {
     }
   }, [state.user, reset])
 
-  const onSubmit = async (_data: ProfileFormData) => {
+  const onSubmit = async (data: ProfileFormData) => {
     try {
       setIsSubmitting(true)
-      // This will be replaced with actual GraphQL mutation
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      alert('Profile updated successfully!')
+
+      const result = await updateProfile({
+        firstName: data.firstName,
+        lastName: data.lastName
+        // Note: Email updates might require separate verification flow
+      })
+
+      if (result.success) {
+        alert('Profile updated successfully!')
+      } else {
+        setError('root', { message: result.error || 'Failed to update profile' })
+      }
     } catch (error) {
       setError('root', { message: 'An unexpected error occurred. Please try again.' })
     } finally {
@@ -62,9 +74,9 @@ function ProfileContent() {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('Are you sure you want to sign out?')) {
-      logout()
+      await logout()
     }
   }
 

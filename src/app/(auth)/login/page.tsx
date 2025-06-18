@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/lib/auth'
+import { useLogin } from '@/lib/auth/use-auth-mutations'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
@@ -31,7 +32,8 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect') || '/'
   
-  const { state, login, clearError } = useAuth()
+  const { state, clearError } = useAuth()
+  const { login, loading: loginLoading } = useLogin()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -60,15 +62,12 @@ function LoginForm() {
       setIsSubmitting(true)
       clearError()
 
-      const success = await login(data.email, data.password)
+      const result = await login(data.email, data.password)
       
-      if (success) {
+      if (result.success) {
         router.push(redirectUrl as any)
       } else {
-        // The auth context will set the error state
-        if (state.error) {
-          setError('root', { message: state.error })
-        }
+        setError('root', { message: result.error || 'Login failed' })
       }
     } catch (error) {
       setError('root', { 
@@ -187,8 +186,8 @@ function LoginForm() {
                 type="submit"
                 variant="primary"
                 className="w-full"
-                disabled={isSubmitting}
-                loading={isSubmitting}
+                disabled={isSubmitting || loginLoading}
+                loading={isSubmitting || loginLoading}
               >
                 {isSubmitting ? 'Signing In...' : 'Sign In'}
               </Button>

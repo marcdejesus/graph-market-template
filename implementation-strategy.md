@@ -79,6 +79,13 @@ src/
 - [x] Create logout functionality
 
 #### 2.4 GraphQL Mutations
+- [x] Integrate GraphQL mutations with authentication context
+- [x] Replace mock authentication with real GraphQL calls
+- [x] Implement proper error handling for GraphQL responses
+- [x] Add optimistic updates for mutation operations
+- [x] Create mutation hooks for reusable GraphQL operations
+- [x] Update profile page to use real GraphQL mutations
+
 ```typescript
 const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {

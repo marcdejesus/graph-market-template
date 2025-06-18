@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/lib/auth'
+import { useRegister } from '@/lib/auth/use-auth-mutations'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
@@ -46,6 +47,7 @@ type RegisterFormData = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const router = useRouter()
   const { state, clearError } = useAuth()
+  const { register: registerUser, loading: _registerLoading } = useRegister()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -74,31 +76,19 @@ export default function RegisterPage() {
       setIsSubmitting(true)
       clearError()
 
-      // This will be replaced with actual GraphQL mutation
-      const response = await fetch(`${process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          password: data.password,
-        })
+      const result = await registerUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        setError('root', { 
-          message: errorData.message || 'Registration failed. Please try again.' 
-        })
-        return
+      if (result.success) {
+        // Registration successful - redirect to login
+        router.push('/auth/login?message=Registration successful! Please sign in.' as any)
+      } else {
+        setError('root', { message: result.error || 'Registration failed' })
       }
-
-      // Registration successful - redirect to login
-      router.push('/auth/login?message=Registration successful! Please sign in.' as any)
     } catch (error) {
       setError('root', { 
         message: 'An unexpected error occurred. Please try again.' 

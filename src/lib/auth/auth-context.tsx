@@ -199,50 +199,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  // Login function
+  // Login function - now handled by useLogin hook in components
+  // This is kept for context compatibility but shouldn't be used directly
   const login = async (_email: string, _password: string): Promise<boolean> => {
-    try {
-      dispatch({ type: 'LOGIN_START' })
-
-      // This would be replaced with actual GraphQL mutation
-      const response = await fetch(`${process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email: _email, password: _password })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        dispatch({
-          type: 'LOGIN_FAILURE',
-          payload: errorData.message || 'Login failed'
-        })
-        return false
-      }
-
-      const loginResponse = await response.json()
-      const { user, token } = loginResponse
-
-      dispatch({
-        type: 'LOGIN_SUCCESS',
-        payload: { user, token }
-      })
-
-      return true
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.error('Login error:', error)
-      }
-      dispatch({
-        type: 'LOGIN_FAILURE',
-        payload: 'An unexpected error occurred'
-      })
-      return false
+    // Login functionality is now handled by the useLogin hook
+    // Components should use the hook directly for better error handling
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.warn('login() from AuthContext is deprecated. Use useLogin hook instead.')
     }
+    return false
   }
 
   // Logout function

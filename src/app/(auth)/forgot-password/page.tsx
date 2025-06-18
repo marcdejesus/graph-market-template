@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/lib/auth'
+import { useForgotPassword } from '@/lib/auth/use-auth-mutations'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
@@ -25,6 +26,7 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 export default function ForgotPasswordPage() {
   const router = useRouter()
   const { state, clearError } = useAuth()
+  const { forgotPassword, loading: _forgotPasswordLoading } = useForgotPassword()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEmailSent, setIsEmailSent] = useState(false)
 
@@ -55,28 +57,14 @@ export default function ForgotPasswordPage() {
       setIsSubmitting(true)
       clearError()
 
-      // This will be replaced with actual GraphQL mutation
-      const response = await fetch(`${process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT}/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: data.email,
-        })
-      })
+      const result = await forgotPassword(data.email)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        setError('root', { 
-          message: errorData.message || 'Failed to send reset email. Please try again.' 
-        })
-        return
+      if (result.success) {
+        // Email sent successfully
+        setIsEmailSent(true)
+      } else {
+        setError('root', { message: result.error || 'Failed to send reset email' })
       }
-
-      // Email sent successfully
-      setIsEmailSent(true)
     } catch (error) {
       setError('root', { 
         message: 'An unexpected error occurred. Please try again.' 

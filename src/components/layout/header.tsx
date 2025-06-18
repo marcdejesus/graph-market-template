@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import { useAuth } from '@/lib/auth'
+import { useLogout } from '@/lib/auth/use-auth-mutations'
 
 const navigation = [
   { name: 'Shop All', href: '/products' },
@@ -19,7 +20,8 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
-  const { state, logout } = useAuth()
+  const { state } = useAuth()
+  const { logout } = useLogout()
   const router = useRouter()
 
   // Close user menu when clicking outside
@@ -36,9 +38,11 @@ export function Header() {
     }
   }, [])
 
-  const handleLogout = () => {
-    logout()
-    setUserMenuOpen(false)
+  const handleLogout = async () => {
+    if (confirm('Are you sure you want to sign out?')) {
+      await logout()
+      setUserMenuOpen(false)
+    }
   }
 
   return (
