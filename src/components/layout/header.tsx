@@ -6,16 +6,12 @@ import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import { SearchBar } from '@/components/layout/search-bar'
+import { CategoryNavigation } from '@/components/navigation/category-navigation'
 import { useAuth } from '@/lib/auth'
+import { useCart } from '@/hooks/useCart'
 import { useLogout } from '@/lib/auth/use-auth-mutations'
 
-const navigation = [
-  { name: 'Shop All', href: '/products' },
-  { name: 'Tops', href: '/categories/tops' },
-  { name: 'Bottoms', href: '/categories/bottoms' },
-  { name: 'Outerwear', href: '/categories/outerwear' },
-  { name: 'Accessories', href: '/categories/accessories' },
-]
+// Navigation is now handled by CategoryNavigation component
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -23,6 +19,7 @@ export function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const { state } = useAuth()
   const { logout } = useLogout()
+  const { cart } = useCart()
   const router = useRouter()
 
   // Close user menu when clicking outside
@@ -60,16 +57,8 @@ export function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex lg:items-center lg:space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href as any}
-                className="text-primary-900 hover:text-performance-500 transition-colors duration-200 font-medium"
-              >
-                {item.name}
-              </Link>
-            ))}
+          <div className="hidden lg:flex lg:items-center">
+            <CategoryNavigation variant="header" />
           </div>
 
           {/* Desktop Search Bar */}
@@ -159,13 +148,20 @@ export function Header() {
             )}
 
             {/* Shopping Cart */}
-            <Button variant="ghost" size="sm" className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative"
+              onClick={() => router.push('/cart' as any)}
+            >
               <ShoppingBagIcon className="h-5 w-5" />
               <span className="sr-only">Shopping cart</span>
               {/* Cart count badge */}
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-performance-500 text-xs text-white flex items-center justify-center">
-                2
-              </span>
+              {cart.totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-performance-500 text-xs text-white flex items-center justify-center">
+                  {cart.totalItems > 99 ? '99+' : cart.totalItems}
+                </span>
+              )}
             </Button>
 
             {/* Mobile menu button */}
@@ -195,17 +191,11 @@ export function Header() {
             </div>
             
             {/* Navigation Links */}
-            <div className="space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href as any}
-                  className="block px-3 py-2 text-primary-900 hover:bg-steel-50 rounded-md transition-colors font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
+            <div>
+              <CategoryNavigation 
+                variant="mobile" 
+                onLinkClick={() => setMobileMenuOpen(false)} 
+              />
             </div>
 
             {/* Mobile User Actions */}
