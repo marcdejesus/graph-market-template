@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
+import { SearchBar } from '@/components/layout/search-bar'
 import { useAuth } from '@/lib/auth'
 import { useLogout } from '@/lib/auth/use-auth-mutations'
 
@@ -71,13 +72,13 @@ export function Header() {
             ))}
           </div>
 
+          {/* Desktop Search Bar */}
+          <div className="hidden md:block md:w-80 lg:w-96">
+            <SearchBar placeholder="Search for products..." />
+          </div>
+
           {/* Actions */}
           <div className="flex items-center space-x-4">
-            {/* Search */}
-            <Button variant="ghost" size="sm" className="hidden md:flex">
-              <SearchIcon className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
 
             {/* User Account */}
             {state.isAuthenticated ? (
@@ -174,8 +175,8 @@ export function Header() {
               className="lg:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <MenuIcon className="h-5 w-5" />
-              <span className="sr-only">Open menu</span>
+              <HamburgerIcon className="h-5 w-5" isOpen={mobileMenuOpen} />
+              <span className="sr-only">{mobileMenuOpen ? 'Close menu' : 'Open menu'}</span>
             </Button>
           </div>
         </div>
@@ -184,20 +185,98 @@ export function Header() {
         <div className={cn(
           'lg:hidden transition-all duration-300 ease-in-out',
           mobileMenuOpen 
-            ? 'max-h-96 opacity-100 pb-4' 
+            ? 'max-h-[500px] opacity-100 pb-4' 
             : 'max-h-0 opacity-0 overflow-hidden'
         )}>
-          <div className="space-y-1 border-t border-steel-200 pt-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href as any}
-                className="block px-3 py-2 text-primary-900 hover:bg-steel-50 rounded-md transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
-            ))}
+          <div className="border-t border-steel-200 pt-4">
+            {/* Mobile Search */}
+            <div className="px-3 mb-4">
+              <SearchBar placeholder="Search..." isMobile={true} />
+            </div>
+            
+            {/* Navigation Links */}
+            <div className="space-y-1">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href as any}
+                  className="block px-3 py-2 text-primary-900 hover:bg-steel-50 rounded-md transition-colors font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+
+            {/* Mobile User Actions */}
+            {!state.isAuthenticated && (
+              <div className="mt-4 pt-4 border-t border-steel-200 space-y-2 px-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    router.push('/auth/login' as any)
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    router.push('/auth/register' as any)
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </div>
+            )}
+
+            {/* Mobile User Menu for Authenticated Users */}
+            {state.isAuthenticated && (
+              <div className="mt-4 pt-4 border-t border-steel-200 px-3">
+                <div className="mb-3 pb-3 border-b border-steel-100">
+                  <p className="text-sm font-medium text-athletic-black">
+                    {state.user?.firstName} {state.user?.lastName}
+                  </p>
+                  <p className="text-xs text-steel-gray">{state.user?.email}</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <Link
+                    href="/profile"
+                    className="block py-2 text-sm text-athletic-black hover:text-performance-500 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  
+                  <button
+                    onClick={() => {
+                      router.push('/orders' as any)
+                      setMobileMenuOpen(false)
+                    }}
+                    className="block w-full text-left py-2 text-sm text-athletic-black hover:text-performance-500 transition-colors"
+                  >
+                    Order History
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setMobileMenuOpen(false)
+                    }}
+                    className="block w-full text-left py-2 text-sm text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -206,13 +285,6 @@ export function Header() {
 }
 
 // Simple SVG icons
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  )
-}
 
 function UserIcon({ className }: { className?: string }) {
   return (
@@ -230,10 +302,16 @@ function ShoppingBagIcon({ className }: { className?: string }) {
   )
 }
 
-function MenuIcon({ className }: { className?: string }) {
+function HamburgerIcon({ className, isOpen }: { className?: string; isOpen: boolean }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2} 
+        d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+        className="transition-all duration-200"
+      />
     </svg>
   )
 } 
