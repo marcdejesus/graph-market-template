@@ -205,6 +205,9 @@ export interface FormErrors {
   [key: string]: string | string[] | undefined
 }
 
+// Product types
+export * from './product'
+
 // UI Component types
 export interface BaseComponentProps {
   className?: string

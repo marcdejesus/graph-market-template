@@ -2,6 +2,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/clien
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { getAuthToken, removeAuthToken, isTokenExpired } from '../auth/token-manager'
+import { createProductCacheConfig } from '../cache/productCache'
 
 // HTTP Link to GraphQL endpoint
 const httpLink = createHttpLink({
@@ -91,37 +92,10 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 
 // Apollo Client Cache Configuration
 const cache = new InMemoryCache({
+  // Merge product cache configuration with existing policies
+  ...createProductCacheConfig(),
   typePolicies: {
-    Product: {
-      fields: {
-        inStock: {
-          read(_, { readField }) {
-            const stock = readField('stock') as number
-            return stock > 0
-          }
-        },
-        isOnSale: {
-          read(_, { readField }) {
-            const price = readField('price') as number
-            const compareAtPrice = readField('compareAtPrice') as number | undefined
-            return compareAtPrice ? compareAtPrice > price : false
-          }
-        }
-      }
-    },
-    Query: {
-      fields: {
-        products: {
-          keyArgs: ['filter', 'sortBy'],
-          merge(_existing = { edges: [], pageInfo: {} }, incoming) {
-            return {
-              ...incoming,
-              edges: [..._existing.edges, ...incoming.edges],
-            }
-          }
-        }
-      }
-    },
+    ...createProductCacheConfig().typePolicies,
     User: {
       fields: {
         orders: {
