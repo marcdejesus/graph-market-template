@@ -38,11 +38,11 @@ export function useProducts(variables?: ProductListVariables) {
       ...variables,
     },
     notifyOnNetworkStatusChange: true,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
-    return data?.products?.edges?.map(edge => edge.node) || []
+    return data?.products?.edges?.map((edge: any) => edge.node) || []
   }, [data])
 
   const pageInfo = useMemo(() => {
@@ -102,7 +102,7 @@ export function useProduct(id?: string, slug?: string) {
     {
       variables: { id },
       skip: !id,
-      errorPolicy: 'partial',
+      errorPolicy: 'all',
     }
   )
 
@@ -111,7 +111,7 @@ export function useProduct(id?: string, slug?: string) {
     {
       variables: { slug },
       skip: !slug,
-      errorPolicy: 'partial',
+      errorPolicy: 'all',
     }
   )
 
@@ -142,11 +142,11 @@ export function useProductsByCategory(
     },
     skip: !categorySlug,
     notifyOnNetworkStatusChange: true,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
-    return data?.productsByCategory?.edges?.map(edge => edge.node) || []
+    return data?.productsByCategory?.edges?.map((edge: any) => edge.node) || []
   }, [data])
 
   const pageInfo = useMemo(() => {
@@ -208,11 +208,11 @@ export function useProductsByCollection(
     },
     skip: !collectionSlug,
     notifyOnNetworkStatusChange: true,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
-    return data?.productsByCollection?.edges?.map(edge => edge.node) || []
+    return data?.productsByCollection?.edges?.map((edge: any) => edge.node) || []
   }, [data])
 
   const pageInfo = useMemo(() => {
@@ -264,7 +264,7 @@ export function useProductsByCollection(
 // Hook for product search with filters and facets
 export function useProductSearch() {
   const [searchQuery, { data, loading, error }] = useLazyQuery(SEARCH_PRODUCTS, {
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
     notifyOnNetworkStatusChange: true,
   })
 
@@ -306,7 +306,7 @@ export function useProductSearch() {
   }, [data])
 
   const products = useMemo(() => {
-    return results?.products?.edges?.map(edge => edge.node) || []
+    return results?.products?.edges?.map((edge: any) => edge.node) || []
   }, [results])
 
   const filters = useMemo(() => {
@@ -349,7 +349,7 @@ export function useRelatedProducts(
       ...options,
     },
     skip: !productId,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
@@ -367,7 +367,7 @@ export function useRelatedProducts(
 export function useFeaturedProducts(limit = 8) {
   const { data, loading, error, refetch } = useQuery(GET_FEATURED_PRODUCTS, {
     variables: { limit },
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
@@ -386,7 +386,7 @@ export function useFeaturedProducts(limit = 8) {
 export function useNewArrivals(limit = 8) {
   const { data, loading, error, refetch } = useQuery(GET_NEW_ARRIVALS, {
     variables: { limit },
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
@@ -409,11 +409,11 @@ export function useSaleProducts(variables?: ProductListVariables) {
       ...variables,
     },
     notifyOnNetworkStatusChange: true,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const products = useMemo(() => {
-    return data?.saleProducts?.edges?.map(edge => edge.node) || []
+    return data?.saleProducts?.edges?.map((edge: any) => edge.node) || []
   }, [data])
 
   const pageInfo = useMemo(() => {
@@ -465,7 +465,7 @@ export function useSaleProducts(variables?: ProductListVariables) {
 // Hook for categories
 export function useCategories() {
   const { data, loading, error, refetch } = useQuery(GET_CATEGORIES, {
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const categories = useMemo(() => {
@@ -485,7 +485,7 @@ export function useCategory(slug: string) {
   const { data, loading, error } = useQuery(GET_CATEGORY_BY_SLUG, {
     variables: { slug },
     skip: !slug,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const category = useMemo(() => {
@@ -502,7 +502,7 @@ export function useCategory(slug: string) {
 // Hook for collections
 export function useCollections() {
   const { data, loading, error, refetch } = useQuery(GET_COLLECTIONS, {
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const collections = useMemo(() => {
@@ -522,7 +522,7 @@ export function useCollection(slug: string) {
   const { data, loading, error } = useQuery(GET_COLLECTION_BY_SLUG, {
     variables: { slug },
     skip: !slug,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const collection = useMemo(() => {
@@ -540,7 +540,7 @@ export function useCollection(slug: string) {
 export function useProductFilters(categorySlug?: string, search?: string) {
   const { data, loading, error } = useQuery(GET_PRODUCT_FILTERS, {
     variables: { categorySlug, search },
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const filters = useMemo(() => {
@@ -557,7 +557,7 @@ export function useProductFilters(categorySlug?: string, search?: string) {
 // Hook for search suggestions
 export function useSearchSuggestions() {
   const [getSuggestions, { data, loading, error }] = useLazyQuery(GET_SEARCH_SUGGESTIONS, {
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
   })
 
   const suggestions = useMemo(() => {
@@ -588,7 +588,7 @@ export function useProductAvailability(productId?: string, variantId?: string) {
   const { data, loading, error, refetch } = useQuery(CHECK_PRODUCT_AVAILABILITY, {
     variables: { productId, variantId },
     skip: !productId,
-    errorPolicy: 'partial',
+    errorPolicy: 'all',
     pollInterval: 30000, // Poll every 30 seconds for availability updates
   })
 

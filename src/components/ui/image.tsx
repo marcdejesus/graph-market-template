@@ -113,7 +113,7 @@ export function ResponsiveImage({
         blurDataURL={blurDataURL}
         quality={quality}
         sizes={sizes}
-        loading={loading}
+        {...(!priority && { loading })}
         onLoad={handleLoad}
         onError={handleError}
       />
