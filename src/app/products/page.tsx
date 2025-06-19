@@ -1,23 +1,24 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { ResponsiveBreadcrumb } from '@/components/navigation/breadcrumb'
-import { ProductGrid } from '@/components/products'
-import { ProductFilters, ProductSort } from '@/components/products/filters'
-import { Button } from '@/components/ui/button'
+import { ProductCard } from '@/components/products/product-card'
+import { ProductFilters } from '@/components/products/filters/product-filters'
+import { ProductSort } from '@/components/products/filters/product-sort'
 import { LoadingSpinner } from '@/components/ui/loading'
-import { useProductFilters } from '@/hooks/useProductFilters'
+import { Button } from '@/components/ui/button'
 import { mockProducts } from '@/lib/mockData'
 import { mockAvailableFilters, filterProducts, sortProducts } from '@/lib/mockFilterData'
-import { Product } from '@/types'
+import { useProductFilters } from '@/hooks/useProductFilters'
 import { Filter, X } from 'lucide-react'
+import { Product } from '@/types'
+import { ProductFilters as ProductFiltersType } from '@/types/product'
 
 function ProductsPageContent() {
-  const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [itemsToShow, setItemsToShow] = useState(12)
   const [showFilters, setShowFilters] = useState(false)
+  const [itemsToShow, setItemsToShow] = useState(12)
+  const [loading] = useState(false)
 
   const {
     filters,
@@ -28,24 +29,25 @@ function ProductsPageContent() {
     hasActiveFilters
   } = useProductFilters()
 
-  // Load initial products
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAllProducts(mockProducts)
-      setLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
+  // Transform our Product data to work with the filter system
+  const adaptedProducts = useMemo(() => {
+    return mockProducts.map(product => ({
+      ...product,
+      category: { slug: product.category },
+      isOnSale: !!product.compareAtPrice,
+      brand: 'fitmarket', // Default brand for all products
+      rating: 4.2 // Default rating
+    }))
   }, [])
 
   // Apply filters and sorting
   const { filteredProducts, totalResults } = useMemo(() => {
-    if (!allProducts.length) {
+    if (!adaptedProducts.length) {
       return { filteredProducts: [], totalResults: 0 }
     }
 
     // Apply filters
-    const filtered = filterProducts(allProducts, filters)
+    const filtered = filterProducts(adaptedProducts, filters)
     
     // Apply sorting
     const sorted = sortProducts(filtered, sortOptions)
@@ -54,18 +56,25 @@ function ProductsPageContent() {
       filteredProducts: sorted,
       totalResults: filtered.length
     }
-  }, [allProducts, filters, sortOptions])
+  }, [adaptedProducts, filters, sortOptions])
 
-  const displayedProducts = filteredProducts.slice(0, itemsToShow)
+  // Convert back to original Product type for display
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, itemsToShow).map(({ category, isOnSale, brand, rating, ...rest }) => ({
+      ...rest,
+      category: category.slug
+    } as Product))
+  }, [filteredProducts, itemsToShow])
+
   const hasMoreProducts = itemsToShow < filteredProducts.length
 
   const handleLoadMore = () => {
     setItemsToShow(prev => prev + 12)
   }
 
-  const handleFiltersChange = (newFilters: any) => {
+  const handleFiltersChange = (newFilters: Partial<ProductFiltersType>) => {
     Object.entries(newFilters).forEach(([key, value]) => {
-      setFilter(key as any, value)
+      setFilter(key as keyof ProductFiltersType, value)
     })
   }
 
@@ -241,40 +250,47 @@ function ProductsPageContent() {
               </div>
             )}
 
-            {/* Product Grid */}
-            <ProductGrid 
-              products={displayedProducts}
-              loading={loading}
-              className="mb-12"
-            />
-
-            {/* Load More Button */}
-            {!loading && hasMoreProducts && (
-              <div className="text-center">
-                <Button
-                  onClick={handleLoadMore}
-                  variant="outline"
-                  className="px-8 py-3"
-                >
-                  Load More Products ({filteredProducts.length - itemsToShow} remaining)
-                </Button>
+            {/* Products Grid */}
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="bg-steel-100 rounded-lg aspect-[4/5] animate-pulse" />
+                ))}
               </div>
-            )}
+            ) : displayedProducts.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {displayedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
 
-            {/* No Products State */}
-            {!loading && filteredProducts.length === 0 && (
+                {/* Load More Button */}
+                {hasMoreProducts && (
+                  <div className="text-center mt-8">
+                    <Button
+                      onClick={handleLoadMore}
+                      variant="outline"
+                      size="lg"
+                      className="min-w-[200px]"
+                    >
+                      Load More Products
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
               <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-athletic-black mb-2">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-semibold text-athletic-black mb-2">
                   No products found
                 </h3>
-                <p className="text-steel-500 mb-4">
-                  Try adjusting your filters to see more results.
+                <p className="text-steel-600 mb-6">
+                  Try adjusting your filters or search terms
                 </p>
-                {hasActiveFilters && (
-                  <Button onClick={handleClearFilters} variant="outline">
-                    Clear all filters
-                  </Button>
-                )}
+                <Button onClick={handleClearFilters} variant="outline">
+                  Clear All Filters
+                </Button>
               </div>
             )}
           </div>

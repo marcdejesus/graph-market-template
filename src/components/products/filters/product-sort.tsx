@@ -33,9 +33,10 @@ const SORT_OPTIONS: SortOption[] = [
 export function ProductSort({ sortOptions, onSortChange, className = '' }: ProductSortProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const currentSort = SORT_OPTIONS.find(
+  const foundSort = SORT_OPTIONS.find(
     option => option.field === sortOptions.field && option.direction === sortOptions.direction
-  ) ?? SORT_OPTIONS[0]
+  )
+  const currentSort = foundSort || SORT_OPTIONS[0]!
 
   const handleSortSelect = (option: SortOption) => {
     onSortChange({

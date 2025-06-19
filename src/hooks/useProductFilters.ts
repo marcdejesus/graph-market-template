@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { ProductFilters, ProductSortOptions } from '@/types/product'
 
 interface UseProductFiltersReturn {
@@ -24,6 +24,7 @@ const DEFAULT_SORT: ProductSortOptions = {
 export function useProductFilters(): UseProductFiltersReturn {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   
   const [filters, setFilters] = useState<ProductFilters>({})
   const [sortOptions, setSortOptionsState] = useState<ProductSortOptions>(DEFAULT_SORT)
@@ -178,8 +179,8 @@ export function useProductFilters(): UseProductFiltersReturn {
     }
 
     const queryString = params.toString()
-    return queryString ? `?${queryString}` : ''
-  }, [filters, sortOptions])
+    return queryString ? `${pathname}?${queryString}` : pathname
+  }, [filters, sortOptions, pathname])
 
   // Initialize from URL on mount
   useEffect(() => {
@@ -196,7 +197,7 @@ export function useProductFilters(): UseProductFiltersReturn {
     setFilters(newFilters)
     
     const url = buildUrl({ [key]: value })
-    router.push(url)
+    router.push(url as any)
   }, [filters, buildUrl, router])
 
   // Set sort options
@@ -204,7 +205,7 @@ export function useProductFilters(): UseProductFiltersReturn {
     setSortOptionsState(sort)
     
     const url = buildUrl(undefined, sort)
-    router.push(url)
+    router.push(url as any)
   }, [buildUrl, router])
 
   // Clear all filters
@@ -212,8 +213,8 @@ export function useProductFilters(): UseProductFiltersReturn {
     setFilters({})
     setSortOptionsState(DEFAULT_SORT)
     
-    router.push('?')
-  }, [router])
+    router.push(pathname as any)
+  }, [router, pathname])
 
   // Clear a specific filter
   const clearFilter = useCallback((key: keyof ProductFilters) => {
@@ -222,7 +223,7 @@ export function useProductFilters(): UseProductFiltersReturn {
     setFilters(newFilters)
     
     const url = buildUrl(newFilters)
-    router.push(url)
+    router.push(url as any)
   }, [filters, buildUrl, router])
 
   // Check if any filters are active
