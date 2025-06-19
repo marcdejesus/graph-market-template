@@ -1,67 +1,78 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { MainLayout } from '@/components/layout/main-layout'
 import { ResponsiveBreadcrumb } from '@/components/navigation/breadcrumb'
 import { ProductGrid } from '@/components/products'
+import { ProductFilters, ProductSort } from '@/components/products/filters'
 import { Button } from '@/components/ui/button'
+import { LoadingSpinner } from '@/components/ui/loading'
+import { useProductFilters } from '@/hooks/useProductFilters'
 import { mockProducts } from '@/lib/mockData'
+import { mockAvailableFilters, filterProducts, sortProducts } from '@/lib/mockFilterData'
 import { Product } from '@/types'
+import { Filter, X } from 'lucide-react'
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
+function ProductsPageContent() {
+  const [allProducts, setAllProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState<string>('newest')
   const [itemsToShow, setItemsToShow] = useState(12)
+  const [showFilters, setShowFilters] = useState(false)
 
+  const {
+    filters,
+    sortOptions,
+    setFilter,
+    setSortOptions,
+    clearFilters,
+    hasActiveFilters
+  } = useProductFilters()
+
+  // Load initial products
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => {
-      setProducts(mockProducts)
+      setAllProducts(mockProducts)
       setLoading(false)
     }, 1000)
 
     return () => clearTimeout(timer)
   }, [])
 
-  const handleSortChange = (newSort: string) => {
-    setSortBy(newSort)
-    setLoading(true)
+  // Apply filters and sorting
+  const { filteredProducts, totalResults } = useMemo(() => {
+    if (!allProducts.length) {
+      return { filteredProducts: [], totalResults: 0 }
+    }
+
+    // Apply filters
+    const filtered = filterProducts(allProducts, filters)
     
-    // Simulate API call with sorting
-    setTimeout(() => {
-             const sortedProducts = [...mockProducts]
-      
-      switch (newSort) {
-        case 'price_asc':
-          sortedProducts.sort((a, b) => a.price - b.price)
-          break
-        case 'price_desc':
-          sortedProducts.sort((a, b) => b.price - a.price)
-          break
-        case 'name_asc':
-          sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
-          break
-        case 'name_desc':
-          sortedProducts.sort((a, b) => b.name.localeCompare(a.name))
-          break
-        case 'newest':
-        default:
-          sortedProducts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          break
-      }
-      
-      setProducts(sortedProducts)
-      setLoading(false)
-    }, 500)
-  }
+    // Apply sorting
+    const sorted = sortProducts(filtered, sortOptions)
+
+    return {
+      filteredProducts: sorted,
+      totalResults: filtered.length
+    }
+  }, [allProducts, filters, sortOptions])
+
+  const displayedProducts = filteredProducts.slice(0, itemsToShow)
+  const hasMoreProducts = itemsToShow < filteredProducts.length
 
   const handleLoadMore = () => {
     setItemsToShow(prev => prev + 12)
   }
 
-  const displayedProducts = products.slice(0, itemsToShow)
-  const hasMoreProducts = itemsToShow < products.length
+  const handleFiltersChange = (newFilters: any) => {
+    Object.entries(newFilters).forEach(([key, value]) => {
+      setFilter(key as any, value)
+    })
+  }
+
+  const handleClearFilters = () => {
+    clearFilters()
+    setItemsToShow(12)
+  }
 
   return (
     <MainLayout padded>
@@ -78,63 +89,205 @@ export default function ProductsPage() {
           </p>
         </div>
 
-        {/* Filter and Sort Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div className="flex items-center gap-2 text-sm text-steel-600">
-            <span>Showing {displayedProducts.length} of {products.length} products</span>
+        <div className="flex gap-8">
+          {/* Mobile Filter Toggle */}
+          <div className="lg:hidden w-full mb-6">
+            <div className="flex items-center justify-between">
+              <Button
+                onClick={() => setShowFilters(!showFilters)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+                {hasActiveFilters && (
+                  <span className="bg-performance-500 text-white text-xs rounded-full px-2 py-1 ml-1">
+                    {Object.values(filters).filter(v => v && (Array.isArray(v) ? v.length > 0 : true)).length}
+                  </span>
+                )}
+              </Button>
+              
+              <ProductSort
+                sortOptions={sortOptions}
+                onSortChange={setSortOptions}
+                className="flex-1 max-w-xs ml-4"
+              />
+            </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <label htmlFor="sort" className="text-sm font-medium text-athletic-black">
-              Sort by:
-            </label>
-            <select
-              id="sort"
-              value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="border border-steel-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-performance-500"
-            >
-              <option value="newest">Newest</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="name_asc">Name: A to Z</option>
-              <option value="name_desc">Name: Z to A</option>
-            </select>
+
+          {/* Filters Sidebar */}
+          <div className={`w-full lg:w-80 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+            {loading ? (
+              <div className="bg-white border border-steel-200 rounded-lg p-6">
+                <LoadingSpinner size="md" className="mx-auto" />
+              </div>
+            ) : (
+              <ProductFilters
+                filters={filters}
+                availableFilters={mockAvailableFilters}
+                onFiltersChange={handleFiltersChange}
+                onClearFilters={handleClearFilters}
+                className="sticky top-6"
+              />
+            )}
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Results Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-steel-600">
+                  {loading ? (
+                    'Loading products...'
+                  ) : (
+                    `Showing ${displayedProducts.length} of ${totalResults} products`
+                  )}
+                </div>
+                
+                {hasActiveFilters && (
+                  <Button
+                    onClick={handleClearFilters}
+                    variant="ghost"
+                    size="sm"
+                    className="text-performance-600 hover:text-performance-700 hidden sm:flex items-center gap-1"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+              
+              {/* Desktop Sort */}
+              <div className="hidden lg:block">
+                <ProductSort
+                  sortOptions={sortOptions}
+                  onSortChange={setSortOptions}
+                />
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {hasActiveFilters && (
+              <div className="mb-6">
+                <div className="flex flex-wrap gap-2">
+                  {filters.category?.map(category => (
+                    <div key={category} className="flex items-center gap-1 bg-steel-100 text-steel-800 px-3 py-1 rounded-full text-sm">
+                      Category: {category}
+                      <button
+                        onClick={() => setFilter('category', filters.category?.filter(c => c !== category))}
+                        className="ml-1 hover:text-performance-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {filters.sizes?.map(size => (
+                    <div key={size} className="flex items-center gap-1 bg-steel-100 text-steel-800 px-3 py-1 rounded-full text-sm">
+                      Size: {size.toUpperCase()}
+                      <button
+                        onClick={() => setFilter('sizes', filters.sizes?.filter(s => s !== size))}
+                        className="ml-1 hover:text-performance-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {filters.colors?.map(color => (
+                    <div key={color} className="flex items-center gap-1 bg-steel-100 text-steel-800 px-3 py-1 rounded-full text-sm">
+                      Color: {color.replace('-', ' ')}
+                      <button
+                        onClick={() => setFilter('colors', filters.colors?.filter(c => c !== color))}
+                        className="ml-1 hover:text-performance-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {filters.priceRange && (
+                    <div className="flex items-center gap-1 bg-steel-100 text-steel-800 px-3 py-1 rounded-full text-sm">
+                      Price: ${filters.priceRange.min} - ${filters.priceRange.max}
+                      <button
+                        onClick={() => setFilter('priceRange', undefined)}
+                        className="ml-1 hover:text-performance-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  {filters.inStock && (
+                    <div className="flex items-center gap-1 bg-steel-100 text-steel-800 px-3 py-1 rounded-full text-sm">
+                      In Stock Only
+                      <button
+                        onClick={() => setFilter('inStock', false)}
+                        className="ml-1 hover:text-performance-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  {filters.onSale && (
+                    <div className="flex items-center gap-1 bg-steel-100 text-steel-800 px-3 py-1 rounded-full text-sm">
+                      On Sale
+                      <button
+                        onClick={() => setFilter('onSale', false)}
+                        className="ml-1 hover:text-performance-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Product Grid */}
+            <ProductGrid 
+              products={displayedProducts}
+              loading={loading}
+              className="mb-12"
+            />
+
+            {/* Load More Button */}
+            {!loading && hasMoreProducts && (
+              <div className="text-center">
+                <Button
+                  onClick={handleLoadMore}
+                  variant="outline"
+                  className="px-8 py-3"
+                >
+                  Load More Products ({filteredProducts.length - itemsToShow} remaining)
+                </Button>
+              </div>
+            )}
+
+            {/* No Products State */}
+            {!loading && filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-athletic-black mb-2">
+                  No products found
+                </h3>
+                <p className="text-steel-500 mb-4">
+                  Try adjusting your filters to see more results.
+                </p>
+                {hasActiveFilters && (
+                  <Button onClick={handleClearFilters} variant="outline">
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Product Grid */}
-        <ProductGrid 
-          products={displayedProducts}
-          loading={loading}
-          className="mb-12"
-        />
-
-        {/* Load More Button */}
-        {!loading && hasMoreProducts && (
-          <div className="text-center">
-            <Button
-              onClick={handleLoadMore}
-              variant="outline"
-              className="px-8 py-3"
-            >
-              Load More Products
-            </Button>
-          </div>
-        )}
-
-        {/* No Products State */}
-        {!loading && products.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-athletic-black mb-2">
-              No products available
-            </h3>
-            <p className="text-steel-500">
-              Check back soon for new arrivals!
-            </p>
-          </div>
-        )}
       </div>
     </MainLayout>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner size="lg" className="mx-auto mt-8" />}>
+      <ProductsPageContent />
+    </Suspense>
   )
 } 
