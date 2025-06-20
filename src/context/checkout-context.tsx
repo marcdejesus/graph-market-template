@@ -13,12 +13,12 @@ import {
   OrderResult
 } from '@/types/checkout'
 
-// Initial checkout steps
-const initialSteps: CheckoutStepInfo[] = [
+// Initial step configuration
+const createInitialSteps = (): CheckoutStepInfo[] => [
   {
     id: 'cart',
-    title: 'Cart Review',
-    description: 'Review your items',
+    title: 'Review Cart',
+    description: 'Review items and quantities',
     isCompleted: false,
     isActive: true,
     isAccessible: true
@@ -26,7 +26,7 @@ const initialSteps: CheckoutStepInfo[] = [
   {
     id: 'shipping',
     title: 'Shipping',
-    description: 'Shipping address',
+    description: 'Delivery address and method',
     isCompleted: false,
     isActive: false,
     isAccessible: false
@@ -34,7 +34,7 @@ const initialSteps: CheckoutStepInfo[] = [
   {
     id: 'payment',
     title: 'Payment',
-    description: 'Payment method',
+    description: 'Payment and billing information',
     isCompleted: false,
     isActive: false,
     isAccessible: false
@@ -42,17 +42,17 @@ const initialSteps: CheckoutStepInfo[] = [
   {
     id: 'confirmation',
     title: 'Confirmation',
-    description: 'Order summary',
+    description: 'Review and place order',
     isCompleted: false,
     isActive: false,
     isAccessible: false
   }
 ]
 
-// Initial state
+// Initial checkout state
 const initialCheckoutState: CheckoutState = {
   currentStep: 'cart',
-  steps: initialSteps,
+  steps: createInitialSteps(),
   orderSummary: {
     items: [],
     subtotal: 0,
@@ -67,42 +67,37 @@ const initialCheckoutState: CheckoutState = {
   validationErrors: {}
 }
 
-// Checkout reducer
+// Reducer function
 function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
   switch (action.type) {
     case 'SET_CURRENT_STEP':
       return {
         ...state,
         currentStep: action.payload,
-        steps: state.steps.map(step => ({
-          ...step,
-          isActive: step.id === action.payload
+        steps: state.steps.map(_step => ({
+          ..._step,
+          isActive: _step.id === action.payload
         }))
       }
 
     case 'UPDATE_STEP_STATUS':
       return {
         ...state,
-        steps: state.steps.map(step => 
-          step.id === action.payload.step
+        steps: state.steps.map(_step =>
+          _step.id === action.payload.step
             ? {
-                ...step,
+                ..._step,
                 isCompleted: action.payload.isCompleted,
                 isAccessible: action.payload.isAccessible
               }
-            : step
+            : _step
         )
       }
 
     case 'SET_SHIPPING_INFO':
       return {
         ...state,
-        shippingInfo: action.payload,
-        orderSummary: {
-          ...state.orderSummary,
-          shipping: action.payload.method.price,
-          total: state.orderSummary.subtotal + action.payload.method.price + state.orderSummary.tax - state.orderSummary.discount
-        }
+        shippingInfo: action.payload
       }
 
     case 'SET_PAYMENT_INFO':
@@ -129,8 +124,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     case 'SET_ERROR':
       return {
         ...state,
-        error: action.payload,
-        isLoading: false
+        error: action.payload
       }
 
     case 'SET_VALIDATION_ERRORS':
@@ -236,49 +230,107 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     }
   }, [getCurrentStepIndex, state.steps])
 
-  // Step management - simplified for Phase 6.1
+  // Step management
   const completeStep = useCallback((_step: CheckoutStep) => {
-    // Will be implemented in Phase 6.2
-    // eslint-disable-next-line no-console
-    console.log('completeStep - to be implemented in Phase 6.2')
+    // Mark current step as completed and make next step accessible
+    dispatch({
+      type: 'UPDATE_STEP_STATUS',
+      payload: {
+        step: _step,
+        isCompleted: true,
+        isAccessible: true
+      }
+    })
+
+    // Make next step accessible
+    const stepOrder: CheckoutStep[] = ['cart', 'shipping', 'payment', 'confirmation']
+    const currentIndex = stepOrder.indexOf(_step)
+    if (currentIndex < stepOrder.length - 1) {
+      const nextStep = stepOrder[currentIndex + 1]
+      if (nextStep) {
+        dispatch({
+          type: 'UPDATE_STEP_STATUS',
+          payload: {
+            step: nextStep,
+            isCompleted: false,
+            isAccessible: true
+          }
+        })
+      }
+    }
   }, [])
 
   const validateCurrentStep = useCallback(async (): Promise<boolean> => {
-    // Will be implemented in Phase 6.2
-    // eslint-disable-next-line no-console
-    console.log('validateCurrentStep - to be implemented in Phase 6.2')
-    return true
-  }, [])
+    switch (state.currentStep) {
+      case 'cart':
+        return cartState.items.length > 0
+      case 'shipping':
+        return !!state.shippingInfo?.address && !!state.shippingInfo?.method
+      case 'payment':
+        return !!state.paymentInfo?.type
+      case 'confirmation':
+        return true
+      default:
+        return false
+    }
+  }, [state.currentStep, state.shippingInfo, state.paymentInfo, cartState.items])
 
-  // Data management - simplified for Phase 6.1
+  // Data management
   const setShippingInfo = useCallback((_info: ShippingInfo) => {
-    // Will be implemented in Phase 6.2
-    // eslint-disable-next-line no-console
-    console.log('setShippingInfo - to be implemented in Phase 6.2')
-  }, [])
+    dispatch({ type: 'SET_SHIPPING_INFO', payload: _info })
+    
+    // Update order summary with shipping cost
+    const shippingCost = _info.method.price
+    const subtotal = cartState.totalAmount
+    const tax = subtotal * 0.0875
+    const total = subtotal + shippingCost + tax
+    
+    dispatch({
+      type: 'UPDATE_ORDER_SUMMARY',
+      payload: {
+        shipping: shippingCost,
+        total
+      }
+    })
+  }, [cartState.totalAmount])
 
   const setPaymentInfo = useCallback((_info: PaymentInfo) => {
-    // Will be implemented in Phase 6.2
-    // eslint-disable-next-line no-console
-    console.log('setPaymentInfo - to be implemented in Phase 6.2')
+    dispatch({ type: 'SET_PAYMENT_INFO', payload: _info })
   }, [])
 
   const updateOrderSummary = useCallback((_summary: Partial<OrderSummary>) => {
     dispatch({ type: 'UPDATE_ORDER_SUMMARY', payload: _summary })
   }, [])
 
-  // Order processing - simplified for Phase 6.1
+  // Order processing
   const placeOrder = useCallback(async (): Promise<OrderResult> => {
-    // Mock order result for Phase 6.1
-    return {
-      id: `order_${Date.now()}`,
-      orderNumber: `FIT${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-      status: 'confirmed',
-      totalAmount: state.orderSummary.total,
-      estimatedDelivery: state.orderSummary.estimatedDelivery,
-      createdAt: new Date()
+    dispatch({ type: 'SET_LOADING', payload: true })
+    
+    try {
+      // Simulate order processing
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Mock order result
+      const orderResult: OrderResult = {
+        id: `order_${Date.now()}`,
+        orderNumber: `FIT${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+        status: 'confirmed',
+        totalAmount: state.orderSummary.total,
+        estimatedDelivery: state.orderSummary.estimatedDelivery,
+        createdAt: new Date()
+      }
+      
+      // Complete confirmation step and go to final step if it exists
+      completeStep('confirmation')
+      
+      return orderResult
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to place order' })
+      throw error
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false })
     }
-  }, [state.orderSummary])
+  }, [state.orderSummary, completeStep])
 
   // Utilities
   const canProceedToNextStep = useCallback((): boolean => {
@@ -295,15 +347,62 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'RESET_CHECKOUT' })
   }, [])
 
-  // Form validation - simplified for Phase 6.1
+  // Form validation helpers
   const validateShippingInfo = useCallback((_info: Partial<ShippingInfo>): Record<string, string> => {
-    // Will be implemented in Phase 6.2
-    return {}
+    const errors: Record<string, string> = {}
+    
+    if (!_info.address?.firstName?.trim()) {
+      errors.firstName = 'First name is required'
+    }
+    if (!_info.address?.lastName?.trim()) {
+      errors.lastName = 'Last name is required'
+    }
+    if (!_info.address?.address1?.trim()) {
+      errors.address1 = 'Street address is required'
+    }
+    if (!_info.address?.city?.trim()) {
+      errors.city = 'City is required'
+    }
+    if (!_info.address?.province?.trim()) {
+      errors.province = 'State/Province is required'
+    }
+    if (!_info.address?.zip?.trim()) {
+      errors.zip = 'ZIP/Postal code is required'
+    }
+    if (!_info.address?.country?.trim()) {
+      errors.country = 'Country is required'
+    }
+    if (!_info.method) {
+      errors.method = 'Shipping method is required'
+    }
+    
+    return errors
   }, [])
 
   const validatePaymentInfo = useCallback((_info: Partial<PaymentInfo>): Record<string, string> => {
-    // Will be implemented in Phase 6.2
-    return {}
+    const errors: Record<string, string> = {}
+    
+    if (!_info.type) {
+      errors.type = 'Payment method is required'
+    }
+    
+    // Add specific validation based on payment type
+    if (_info.type === 'card') {
+      if (!_info.cardNumber?.trim()) {
+        errors.cardNumber = 'Card number is required'
+      }
+      if (!_info.expiryMonth || !_info.expiryYear) {
+        errors.expiry = 'Expiry date is required'
+      }
+      if (!_info.cvv?.trim()) {
+        errors.cvv = 'CVV is required'
+      }
+      if (!_info.cardholderName?.trim()) {
+        errors.cardholderName = 'Cardholder name is required'
+      }
+    }
+    
+    return errors
   }, [])
 
   const contextValue: CheckoutContextType = {

@@ -1,74 +1,49 @@
 'use client'
 
 import { useCheckout } from '@/context/checkout-context'
-import { CheckoutLayout } from './checkout-layout'
+import { CartReviewStep } from './steps/cart-review-step'
+import { ShippingStep } from './steps/shipping-step'
+import { ConfirmationStep } from './steps/confirmation-step'
+import { OrderSuccessStep } from './steps/order-success-step'
+import { CheckoutStepInfo } from '@/types/checkout'
 
 export function CheckoutFlow() {
   const { state } = useCheckout()
 
-  // Render step content based on current step
-  const renderStepContent = () => {
+  // For Phase 6.2, we're implementing the actual step components
+  // Payment step will be added in a future phase
+  const renderCurrentStep = () => {
     switch (state.currentStep) {
       case 'cart':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Review Your Items</h3>
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">Cart review step content will be implemented in Phase 6.2</p>
-              <div className="text-sm text-gray-500">
-                This step will show cart items, quantities, and allow final review before proceeding to shipping.
-              </div>
-            </div>
-          </div>
-        )
-
+        return <CartReviewStep />
+      
       case 'shipping':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Shipping Information</h3>
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">Shipping step content will be implemented in Phase 6.2</p>
-              <div className="text-sm text-gray-500">
-                This step will collect shipping address and delivery method selection.
-              </div>
-            </div>
-          </div>
-        )
-
+        return <ShippingStep />
+      
       case 'payment':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Payment Information</h3>
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">Payment step content will be implemented in Phase 6.2</p>
-              <div className="text-sm text-gray-500">
-                This step will collect payment method and billing information.
-              </div>
-            </div>
-          </div>
-        )
-
+        // For now, skip payment and go directly to confirmation
+        // This will be implemented in a future phase
+        return <ConfirmationStep />
+      
       case 'confirmation':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Order Confirmation</h3>
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">Confirmation step content will be implemented in Phase 6.2</p>
-              <div className="text-sm text-gray-500">
-                This step will show final order summary and place order button.
-              </div>
-            </div>
-          </div>
-        )
-
+        // Check if order has been placed by looking for order result
+        // For now, show confirmation step (order review) until order is placed
+        const orderPlaced = state.steps.find((step: CheckoutStepInfo) => step.id === 'confirmation')?.isCompleted
+        
+        if (orderPlaced) {
+          return <OrderSuccessStep />
+        } else {
+          return <ConfirmationStep />
+        }
+      
       default:
-        return <div>Unknown step</div>
+        return <CartReviewStep />
     }
   }
 
   return (
-    <CheckoutLayout>
-      {renderStepContent()}
-    </CheckoutLayout>
+    <div className="flex-1">
+      {renderCurrentStep()}
+    </div>
   )
 } 

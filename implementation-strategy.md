@@ -210,11 +210,11 @@ The cart system follows these design principles:
 - [x] Implement form validation for each step
 - [x] Build checkout state management
 
-#### 6.2 Checkout Steps
-- [ ] **Step 1:** Cart review and item validation
-- [ ] **Step 2:** Shipping address collection
-- [ ] **Step 3:** Order summary and confirmation
-- [ ] **Step 4:** Order placement and success page
+#### ✅ 6.2 Checkout Steps
+- [x] **Step 1:** Cart review and item validation
+- [x] **Step 2:** Shipping address collection
+- [x] **Step 3:** Order summary and confirmation
+- [x] **Step 4:** Order placement and success page
 
 #### 6.3 Address Management
 - [ ] Build address form component
