@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useCallback } from 'react'
 import { useCartContext } from './cart-context'
+import { OrderService } from '@/services/order-service'
 import { 
   CheckoutState, 
   CheckoutAction, 
@@ -12,6 +13,7 @@ import {
   OrderSummary,
   OrderResult
 } from '@/types/checkout'
+import type { CreateOrderInput } from '@/types/order'
 
 // Initial step configuration
 const createInitialSteps = (): CheckoutStepInfo[] => [
@@ -305,32 +307,84 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   // Order processing
   const placeOrder = useCallback(async (): Promise<OrderResult> => {
     dispatch({ type: 'SET_LOADING', payload: true })
+    dispatch({ type: 'SET_ERROR', payload: null })
     
     try {
-      // Simulate order processing
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Validate required information
+      if (!state.shippingInfo?.address || !state.shippingInfo?.method) {
+        throw new Error('Shipping information is required')
+      }
+      if (!state.paymentInfo?.type) {
+        throw new Error('Payment information is required')
+      }
+
+      // Prepare order input
+      const orderInput: CreateOrderInput = {
+        items: cartState.items.map(item => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          unitPrice: item.price
+        })),
+        shippingAddress: {
+          firstName: state.shippingInfo.address.firstName,
+          lastName: state.shippingInfo.address.lastName,
+          company: state.shippingInfo.address.company || '',
+          addressLine1: state.shippingInfo.address.addressLine1,
+          addressLine2: state.shippingInfo.address.addressLine2 || '',
+          city: state.shippingInfo.address.city,
+          state: state.shippingInfo.address.state,
+          zipCode: state.shippingInfo.address.zipCode,
+          country: state.shippingInfo.address.country,
+          phone: state.shippingInfo.address.phone || ''
+        },
+        billingAddress: state.paymentInfo.billingAddress ? {
+          firstName: state.paymentInfo.billingAddress.firstName,
+          lastName: state.paymentInfo.billingAddress.lastName,
+          company: state.paymentInfo.billingAddress.company || '',
+          addressLine1: state.paymentInfo.billingAddress.addressLine1,
+          addressLine2: state.paymentInfo.billingAddress.addressLine2 || '',
+          city: state.paymentInfo.billingAddress.city,
+          state: state.paymentInfo.billingAddress.state,
+          zipCode: state.paymentInfo.billingAddress.zipCode,
+          country: state.paymentInfo.billingAddress.country,
+          phone: state.paymentInfo.billingAddress.phone || ''
+        } : undefined,
+        shippingMethodId: state.shippingInfo.method.id,
+        paymentMethodId: `${state.paymentInfo.type}_method`,
+        promoCode: state.orderSummary.promoCode,
+        notes: state.shippingInfo.instructions
+      }
+
+      // Create order using the service
+      const result = await OrderService.createOrder(orderInput)
       
-      // Mock order result
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create order')
+      }
+
+      // Convert to OrderResult format
       const orderResult: OrderResult = {
-        id: `order_${Date.now()}`,
-        orderNumber: `FIT${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-        status: 'confirmed',
-        totalAmount: state.orderSummary.total,
-        estimatedDelivery: state.orderSummary.estimatedDelivery,
-        createdAt: new Date()
+        id: result.order.id,
+        orderNumber: result.order.orderNumber,
+        status: result.order.status,
+        totalAmount: result.order.total,
+        estimatedDelivery: new Date(result.order.estimatedDelivery || Date.now()),
+        createdAt: new Date(result.order.createdAt)
       }
       
-      // Complete confirmation step and go to final step if it exists
+      // Complete confirmation step
       completeStep('confirmation')
       
       return orderResult
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to place order' })
+      const errorMessage = error instanceof Error ? error.message : 'Failed to place order'
+      dispatch({ type: 'SET_ERROR', payload: errorMessage })
       throw error
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
-  }, [state.orderSummary, completeStep])
+  }, [state.orderSummary, state.shippingInfo, state.paymentInfo, cartState.items, completeStep])
 
   // Utilities
   const canProceedToNextStep = useCallback((): boolean => {
