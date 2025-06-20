@@ -1,78 +1,84 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { useUpdateProfile, useLogout } from '@/lib/auth/use-auth-mutations'
+import { useLogout } from '@/lib/auth/use-auth-mutations'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { MainLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
+import { ProfileOverview, ProfileStats, PasswordChangeForm, AccountPreferences } from '@/components/profile'
 import { cn } from '@/lib/utils'
+import { User, Settings, Shield, Package, LogOut } from 'lucide-react'
 
-const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().min(1, 'Email is required').email('Please enter a valid email address')
-})
+type TabKey = 'overview' | 'security' | 'preferences' | 'orders'
 
-type ProfileFormData = z.infer<typeof profileSchema>
+interface Tab {
+  key: TabKey
+  label: string
+  icon: React.ReactNode
+  component: React.ReactNode
+}
 
 function ProfileContent() {
   const { state } = useAuth()
-  const { updateProfile, loading: _updateLoading } = useUpdateProfile()
   const { logout } = useLogout()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabKey>('overview')
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setError,
-    reset
-  } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      firstName: state.user?.firstName || '',
-      lastName: state.user?.lastName || '',
-      email: state.user?.email || ''
+  const tabs: Tab[] = [
+    {
+      key: 'overview',
+      label: 'Profile',
+      icon: <User className="h-5 w-5" />,
+      component: (
+        <div className="space-y-6">
+          <ProfileStats />
+          <ProfileOverview />
+        </div>
+      )
+    },
+    {
+      key: 'security',
+      label: 'Security',
+      icon: <Shield className="h-5 w-5" />,
+      component: <PasswordChangeForm />
+    },
+    {
+      key: 'preferences',
+      label: 'Preferences',
+      icon: <Settings className="h-5 w-5" />,
+      component: <AccountPreferences />
+    },
+    {
+      key: 'orders',
+      label: 'Orders',
+      icon: <Package className="h-5 w-5" />,
+      component: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Order History</CardTitle>
+            <CardDescription>
+              View and manage your past orders
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <Package className="h-12 w-12 text-steel-gray mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-athletic-black mb-2">
+                View Your Orders
+              </h3>
+              <p className="text-steel-gray mb-6">
+                Access detailed order history and tracking information
+              </p>
+              <Button variant="primary" onClick={() => window.location.href = '/orders'}>
+                Go to Orders
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )
     }
-  })
-
-  useEffect(() => {
-    if (state.user) {
-      reset({
-        firstName: state.user.firstName || '',
-        lastName: state.user.lastName || '',
-        email: state.user.email || ''
-      })
-    }
-  }, [state.user, reset])
-
-  const onSubmit = async (data: ProfileFormData) => {
-    try {
-      setIsSubmitting(true)
-
-      const result = await updateProfile({
-        firstName: data.firstName,
-        lastName: data.lastName
-        // Note: Email updates might require separate verification flow
-      })
-
-      if (result.success) {
-        alert('Profile updated successfully!')
-      } else {
-        setError('root', { message: result.error || 'Failed to update profile' })
-      }
-    } catch (error) {
-      setError('root', { message: 'An unexpected error occurred. Please try again.' })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  ]
 
   const handleLogout = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -80,10 +86,15 @@ function ProfileContent() {
     }
   }
 
+  const activeTabData = tabs.find(tab => tab.key === activeTab)
+
   if (!state.user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-steel-gray">Loading profile...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-performance-red mx-auto mb-4"></div>
+          <p className="text-steel-gray">Loading profile...</p>
+        </div>
       </div>
     )
   }
@@ -91,122 +102,73 @@ function ProfileContent() {
   return (
     <MainLayout>
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-athletic-black">My Profile</h1>
-            <p className="text-steel-gray mt-2">Manage your account information</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-athletic-black">Account Settings</h1>
+                <p className="text-steel-gray mt-2">
+                  Manage your profile, security, and preferences
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="flex items-center space-x-2 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </Button>
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>Update your personal information and email address</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  {errors.root && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                      {errors.root.message}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName" required>First Name</Label>
-                      <input
-                        id="firstName"
-                        type="text"
-                        placeholder="First name"
+          {/* Tabbed Interface */}
+          <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-3">
+              <Card className="sticky top-8">
+                <CardContent className="p-0">
+                  <nav className="space-y-1">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
                         className={cn(
-                          'block w-full rounded-lg border px-4 py-3 text-athletic-black placeholder-steel-gray shadow-sm transition-all duration-200 focus:outline-none focus:ring-1',
-                          errors.firstName
-                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                            : 'border-steel-gray focus:border-performance-red focus:ring-performance-red'
+                          'w-full flex items-center space-x-3 px-6 py-4 text-left transition-colors duration-200',
+                          activeTab === tab.key
+                            ? 'bg-performance-red text-white'
+                            : 'text-steel-gray hover:bg-gray-50 hover:text-athletic-black'
                         )}
-                        {...register('firstName')}
-                      />
-                      {errors.firstName && (
-                        <p className="mt-2 text-sm text-red-600" role="alert">
-                          {errors.firstName.message}
-                        </p>
-                      )}
-                    </div>
+                      >
+                        {tab.icon}
+                        <span className="font-medium">{tab.label}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </CardContent>
+              </Card>
+            </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName" required>Last Name</Label>
-                      <input
-                        id="lastName"
-                        type="text"
-                        placeholder="Last name"
-                        className={cn(
-                          'block w-full rounded-lg border px-4 py-3 text-athletic-black placeholder-steel-gray shadow-sm transition-all duration-200 focus:outline-none focus:ring-1',
-                          errors.lastName
-                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                            : 'border-steel-gray focus:border-performance-red focus:ring-performance-red'
-                        )}
-                        {...register('lastName')}
-                      />
-                      {errors.lastName && (
-                        <p className="mt-2 text-sm text-red-600" role="alert">
-                          {errors.lastName.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email" required>Email Address</Label>
-                    <input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      className={cn(
-                        'block w-full rounded-lg border px-4 py-3 text-athletic-black placeholder-steel-gray shadow-sm transition-all duration-200 focus:outline-none focus:ring-1',
-                        errors.email
-                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                          : 'border-steel-gray focus:border-performance-red focus:ring-performance-red'
-                      )}
-                      {...register('email')}
-                    />
-                    {errors.email && (
-                      <p className="mt-2 text-sm text-red-600" role="alert">
-                        {errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      disabled={isSubmitting}
-                      loading={isSubmitting}
-                    >
-                      {isSubmitting ? 'Updating...' : 'Update Profile'}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Actions</CardTitle>
-                <CardDescription>Manage your account settings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-center text-red-600 border-red-300 hover:bg-red-50"
-                    onClick={handleLogout}
-                  >
-                    Sign Out
-                  </Button>
+            {/* Main Content */}
+            <div className="mt-6 lg:mt-0 lg:col-span-9">
+              <div className="space-y-6">
+                {/* Mobile Tab Header */}
+                <div className="lg:hidden">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center space-x-3">
+                        {activeTabData?.icon}
+                        <CardTitle>{activeTabData?.label}</CardTitle>
+                      </div>
+                    </CardHeader>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Tab Content */}
+                {activeTabData?.component}
+              </div>
+            </div>
           </div>
         </div>
       </div>
