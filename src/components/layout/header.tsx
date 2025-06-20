@@ -8,7 +8,7 @@ import { Button } from '@/components/ui'
 import { SearchBar } from '@/components/layout/search-bar'
 import { CategoryNavigation } from '@/components/navigation/category-navigation'
 import { useAuth } from '@/lib/auth'
-import { useCart } from '@/hooks/useCart'
+import { useCartContext } from '@/context/cart-context'
 import { useLogout } from '@/lib/auth/use-auth-mutations'
 
 // Navigation is now handled by CategoryNavigation component
@@ -19,7 +19,7 @@ export function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const { state } = useAuth()
   const { logout } = useLogout()
-  const { cart } = useCart()
+  const cartContext = useCartContext()
   const router = useRouter()
 
   // Close user menu when clicking outside
@@ -148,21 +148,67 @@ export function Header() {
             )}
 
             {/* Shopping Cart */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="relative"
-              onClick={() => router.push('/cart' as any)}
-            >
-              <ShoppingBagIcon className="h-5 w-5" />
-              <span className="sr-only">Shopping cart</span>
-              {/* Cart count badge */}
-              {cart.totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-performance-500 text-xs text-white flex items-center justify-center">
-                  {cart.totalItems > 99 ? '99+' : cart.totalItems}
-                </span>
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="relative"
+                onClick={() => router.push('/cart' as any)}
+                disabled={cartContext.state.isLoading}
+              >
+                <div className="relative">
+                  <ShoppingBagIcon className="h-5 w-5" />
+                  {/* Loading indicator */}
+                  {cartContext.state.isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-3 h-3 border-2 border-performance-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                <span className="sr-only">Shopping cart</span>
+                
+                {/* Cart count badge */}
+                {cartContext.state.totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-performance-500 text-xs text-white flex items-center justify-center">
+                    {cartContext.state.totalItems > 99 ? '99+' : cartContext.state.totalItems}
+                  </span>
+                )}
+                
+                {/* Sync status indicators */}
+                {!cartContext.state.isOnline && (
+                  <span className="absolute -bottom-1 -left-1 h-3 w-3 rounded-full bg-amber-500 border border-white" title="Offline - changes will sync when online">
+                    <span className="sr-only">Offline</span>
+                  </span>
+                )}
+                
+                {cartContext.state.error && (
+                  <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-red-500 border border-white" title={cartContext.state.error}>
+                    <span className="sr-only">Error</span>
+                  </span>
+                )}
+              </Button>
+              
+              {/* Enhanced cart tooltip for development */}
+              {process.env.NODE_ENV === 'development' && cartContext.state.totalItems > 0 && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-steel-200 z-50 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none hover:pointer-events-auto">
+                  <div className="p-3">
+                    <div className="text-xs font-medium text-athletic-black mb-2">Cart Summary (Dev)</div>
+                    <div className="space-y-1 text-xs text-steel-gray">
+                      <div>Items: {cartContext.state.totalItems}</div>
+                      <div>Total: ${cartContext.state.totalAmount.toFixed(2)}</div>
+                      <div>Status: {cartContext.state.isLoading ? 'Syncing...' : 'Ready'}</div>
+                      <div>Online: {cartContext.state.isOnline ? 'Yes' : 'No'}</div>
+                      {cartContext.state.lastSyncedAt && (
+                        <div>Last sync: {cartContext.state.lastSyncedAt.toLocaleTimeString()}</div>
+                      )}
+                      {cartContext.state.error && (
+                        <div className="text-red-600">Error: {cartContext.state.error}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
-            </Button>
+            </div>
 
             {/* Mobile menu button */}
             <Button
@@ -199,71 +245,58 @@ export function Header() {
             </div>
 
             {/* Mobile User Actions */}
-            {!state.isAuthenticated && (
-              <div className="mt-4 pt-4 border-t border-steel-200 space-y-2 px-3">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    router.push('/auth/login' as any)
-                    setMobileMenuOpen(false)
-                  }}
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  variant="primary" 
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    router.push('/auth/register' as any)
-                    setMobileMenuOpen(false)
-                  }}
-                >
-                  Sign Up
-                </Button>
-              </div>
-            )}
-
-            {/* Mobile User Menu for Authenticated Users */}
-            {state.isAuthenticated && (
-              <div className="mt-4 pt-4 border-t border-steel-200 px-3">
-                <div className="mb-3 pb-3 border-b border-steel-100">
-                  <p className="text-sm font-medium text-athletic-black">
-                    {state.user?.firstName} {state.user?.lastName}
-                  </p>
-                  <p className="text-xs text-steel-gray">{state.user?.email}</p>
-                </div>
-                
-                <div className="space-y-1">
+            {state.isAuthenticated ? (
+              <div className="border-t border-steel-200 pt-4 px-3">
+                <div className="space-y-2">
                   <Link
                     href="/profile"
-                    className="block py-2 text-sm text-athletic-black hover:text-performance-500 transition-colors"
+                    className="block px-4 py-2 text-sm text-athletic-black hover:bg-steel-50 rounded-lg transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     My Profile
                   </Link>
-                  
                   <button
                     onClick={() => {
                       router.push('/orders' as any)
                       setMobileMenuOpen(false)
                     }}
-                    className="block w-full text-left py-2 text-sm text-athletic-black hover:text-performance-500 transition-colors"
+                    className="block w-full text-left px-4 py-2 text-sm text-athletic-black hover:bg-steel-50 rounded-lg transition-colors"
                   >
                     Order History
                   </button>
-                  
                   <button
-                    onClick={() => {
-                      handleLogout()
-                      setMobileMenuOpen(false)
-                    }}
-                    className="block w-full text-left py-2 text-sm text-red-600 hover:text-red-700 transition-colors"
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     Sign Out
                   </button>
+                </div>
+              </div>
+            ) : (
+              <div className="border-t border-steel-200 pt-4 px-3">
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      router.push('/auth/login' as any)
+                      setMobileMenuOpen(false)
+                    }}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      router.push('/auth/register' as any)
+                      setMobileMenuOpen(false)
+                    }}
+                  >
+                    Sign Up
+                  </Button>
                 </div>
               </div>
             )}
@@ -274,8 +307,7 @@ export function Header() {
   )
 }
 
-// Simple SVG icons
-
+// Icon Components
 function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,13 +327,11 @@ function ShoppingBagIcon({ className }: { className?: string }) {
 function HamburgerIcon({ className, isOpen }: { className?: string; isOpen: boolean }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-        className="transition-all duration-200"
-      />
+      {isOpen ? (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      )}
     </svg>
   )
 } 
